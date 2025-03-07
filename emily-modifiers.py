@@ -1,210 +1,103 @@
-# Emily's Modifier Dictionary
 import re
-
 # define your ender here
-uniqueEnders = ["LTZ"]
-
-
+unique_starters = ["STKPWHR"] # Mapped to ltrig(l,l)
 LONGEST_KEY = 1
 
-# fingerspelling dictionary entries for relevant theories 
-spelling = {
-        "A"     : "a",
-        "PW"    : "b",
-        "KR"    : "c",
-        "TK"    : "d",
-        "E"     : "e",
-        "TP"    : "f",
-        "TKPW"  : "g",
-        "H"     : "h",
-        "EU"    : "i",
-        "AOEU"    : "i", # magnum
-        "SKWR"  : "j",
-        "SKWRAEU" : "j", # magnum
-        "K"     : "k",
-        "HR"    : "l",
-        "PH"    : "m",
-        "TPH"   : "n",
-        "O"     : "o",
-        "P"     : "p",
-        "KW"    : "q",
-        "R"     : "r",
-        "S"     : "s",
-        "T"     : "t",
-        "U"     : "u",
-        "SR"    : "v",
-        "W"     : "w",
-        "KP"    : "x",
-        "KWR"   : "y",
-        "STKPW" : "z",
-        "STKPWHR" : "z", # magnum 
-        }
+# RHS fingerspellings.
+# I wanted ltrig hard press + motion to be used for vowels or misc. consonants otherwise not present on RHS like h and w.
+# If there's ever overlaps/conflicts in steno characters, I just made a special combo or controller motion which adds a Z and/or * to differentiate.
+fingerspells = {
+  "-PLZ"      :"a", # M looks like A (ltrig(h) + RHS M = PLZ)
+  "-B"        :"b",
+  "-RBG"      :"c",
+  "-D"        :"d",
+  "-LT"       :"e", # T/F looks like E
+  "-F"        :"f",
+  "-G"        :"g",
+  "-LS"       :"h", # H is kinda a vowel, right? lol
+  "-PBLGZ"    :"i", # J looks like I (ltrig(h) + RHS J = PBLGZ)
+  "-PBLG"     :"j",
+  "-BG"       :"k",
+  "-L"        :"l",
+  "-PL"       :"m",
+  "-PB"       :"n",
+  "-LD"       :"o", # D looks like O
+  "-P"        :"p",
+  "*-PBLGZ"   :"q", # rstick(l,l,ul,u), like KW on LHS
+  "-R"        :"r",
+  "-S"        :"s",
+  "-T"        :"t",
+  "-BLG"      :"u", # K doesn't look like U, but U is for "up" and K is rstick(u)
+  "*F"        :"v",
+  "*-PLZ"     :"w", # rstick(l,l)
+  "-BGS"      :"x",
+  "-RPBLG"    :"y", # y = KWR on LHS, so y = RMK (R)(PL)(BG) on RHS
+  "-Z"        :"z",
+}
 
-# same as emily-symbols format, but modified for use on the left hand
-symbols = {
-        "TR"    : ["tab", "delete", "backspace", "escape"],
-        "KPWR"  : ["up", "left", "right", "down"],
-        "KPWHR" : ["page_up", "home", "end", "page_down"],
-        ""      : ["", "tab", "return", "space"],
-
-        # typable symbols
-        "HR"     : ["exclam", "", "notsign", "exclamdown"],
-        "PH"     : ["quotedbl", "", "", ""],
-        "TKHR"   : ["numbersign", "registered", "copyright", ""],
-        "KPWH"   : ["dollar", "euro", "yen", "sterling"],
-        "PWHR"   : ["percent", "", "", ""],
-        "SKP"    : ["ampersand", "", "", ""],
-        "H"      : ["apostrophe", "", "", ""],
-        "TPH"    : ["parenleft", "less", "bracketleft", "braceleft"],
-        "KWR"    : ["parenright", "greater", "bracketright", "braceright"],
-        "T"      : ["asterisk", "section", "", "multiply"],
-        "K"      : ["plus", "paragraph", "", "plusminus"],
-        "W"      : ["comma", "", "", ""],
-        "TP"     : ["minus", "", "", ""],
-        "R"      : ["period", "periodcentered", "", ""],
-        "WH"     : ["slash", "", "", "division"],
-        "TK"     : ["colon", "", "", ""],
-        "WR"     : ["semicolon", "", "", ""],
-        "TKPW"   : ["equal", "", "", ""],
-        "TPW"    : ["question", "", "questiondown", ""],
-        "TKPWHR" : ["at", "", "", ""],
-        "PR"     : ["backslash", "", "", ""],
-        "KPR"    : ["asciicircum", "guillemotleft", "guillemotright", "degree"],
-        "KW"     : ["underscore", "", "", "mu"],
-        "P"      : ["grave", "", "", ""],
-        "PW"     : ["bar", "", "", "brokenbar"],
-        "TPWR"   : ["asciitilde", "", "", ""]
-        }
+# F + direction = number, except # by itself is just 0, and L is 5.
+numberspells = {
+  "#":   "0",
+  "#F":  "1",
+  "FBG": "2",
+  "FP":  "3",
+  "FPL": "4",
+  "FL":  "5",
+  "FT":  "6",
+  "FD":  "7",
+  "FS":  "8",
+  "FG":  "9",
+}
+# Function keys: F + R
+fn_keyspells = {
+  "#FR":   "F1",
+  "FRBG":  "F2",
+  "FRP":   "F3",
+  "FRPL":  "F4",
+  "FRL":   "F5",
+  "FRT":   "F6",
+  "FRD":   "F7",
+  "FRS":   "F8",
+  "FRG":   "F9",
+  "#*R":   "F10",
+  "#*FR":  "F11",
+  "*FRBG": "F12",
+}
 
 def lookup(chord):
-
-    # extract the chord for easy use
-    stroke = chord[0]
-
-    # quick tests to avoid regex if non-relevant stroke is sent
-    if len(chord) != 1:
-        raise KeyError
+    if len(chord) != 1: raise KeyError
     assert len(chord) <= LONGEST_KEY
 
-    # extract relevant parts of the stroke
-    firstMatch = re.fullmatch(r'([#STKPWHR]*)([AO]*)([*-]*)([EU]*)([FRPB]*)([LGTSDZ]*)', stroke)
+    match1 = re.fullmatch(r'(#?)([STKPWHR]*)([AO]*)([*-]*)([EU]*)([FRPBLGTSDZ]*)', chord[0])
+    if match1 is None: raise KeyError
+    (num, lhs, vowel1, seperator, vowel2, rhs) = match1.groups()
+    modifiers = vowel1 + vowel2
 
-    # error out if there are no matches found
-    if firstMatch is None:
-        raise KeyError
-    # name the relevant extracted parts of the regex
-    (key, vowel1, seperator, vowel2, modifiers, ender) = firstMatch.groups()
+    # If user doesn't specify the special starter or a modifier, then this dictionary has no use.
+    if lhs not in unique_starters: raise KeyError
+    if modifiers is None: raise KeyError
 
-    # if the user doesn't specify a modifier, then error out as the dictionary has no use otherwise
-    if modifiers is None:
-        raise KeyError
+    # RHS stuff (and #) is what will determine fingerspelling.
+    rhs = num + rhs
 
-    # combine the relevant parts of the stroke into a nice name
-    pattern = key + vowel1 + vowel2
+    if   rhs == "": output = "" # This is valid because you can may want to press the Windows key by itself.
+    elif rhs in fingerspells: output = fingerspells[rhs]
+    elif rhs in numberspells: output = numberspells[rhs]
+    elif rhs in fn_keyspells: output = fn_keyspells[rhs]
+    else: raise KeyError
 
-    if ender not in uniqueEnders:
-        raise KeyError
- 
-    if pattern == "":
-        # just modifiers pressed on their own, used a lot in windows apparently
-        character = ""
-    else:
-        # use * to distinguish symbol input from numerical or character input
-        if "*" in seperator:
-            # symbol input
-            # extract the part of the symbol input
-            secondMatch = re.fullmatch(r'([STKPWHR]*)([AO]*)([EU]*)', pattern)
-            # into variables
-            (pattern, variants, vowel2) = secondMatch.groups()
-            # if the pattern is not recognised, error out
-            if pattern not in symbols:
-                raise KeyError
-
-            # calculate the variant count
-            variant = 0
-            if 'A' in variants:
-                variant = variant + 1
-            if 'O' in variants:
-                variant = variant + 2
-
-            # get the entry 
-            entry = symbols[pattern]
-            if type(entry) == list:
-                extract = entry[variant]
-                # error out if the entry isn't applicable
-                if extract == "":
-                    raise KeyError
-
-                character = extract
-            else:
-                character = entry
-        else:
-            # numbers or letters
-            # extract relevant parts of the stroke
-            secondMatch = re.fullmatch(r'([STKPWHR]*)([AO]*)([-EU]*)', pattern)
-            (shape, number, vowel2) = secondMatch.groups()
-
-            # AO is unused in finger spelling, thus used to disginguish numerical input
-            if number == "AO" and vowel2 == "":
-
-                # left-hand bottom row counts in binary for numbers 0-9
-                count = 0
-                if "R" in shape:
-                    count = count + 1
-                if "W" in shape:
-                    count = count + 2
-                if "K" in shape:
-                    count = count + 4
-                if "S" in shape:
-                    count = count + 8
-
-                # if TP is being held as well, then user is inputting a Fx key - like alt+F4
-                function = False
-                if "T" in shape and "P" in shape:
-                    function = True
-
-                # add the 'F' if F number
-                if function:
-                    character = "F" + str(count)
-                    if count > 12:
-                        raise KeyError
-                else:
-                    if count > 9:
-                        raise KeyError
-                    character = str(count)
-            else:
-                # finger spelling input
-                entry = shape + number + vowel2
-
-                # check for entry in dictionary 
-                if entry not in spelling:
-                    raise KeyError
-                character = spelling[entry]
-
-                # if there is no entry, pass the error
-                if character == "":
-                    raise KeyError
-
-    # accumulate list of modifiers to be added to the character
-    # may need to reorder?
-    modKeys = modifiers
+    # Accumulate list of modifiers to be added to the output
     mods = []
-    if "R" in modKeys:
-        mods.append("shift")
-    if "F" in modKeys:
-        mods.append("control")
-    if "B" in modKeys:
-        mods.append("alt")
-    if "P" in modKeys:
-        mods.append("super")
+    if "O" in modifiers: mods.append("shift")
+    if "A" in modifiers: mods.append("control")
+    if "U" in modifiers: mods.append("alt")
+    if "E" in modifiers: mods.append("super")
 
-    # apply those modifiers
-    combo = character
-    for mod in mods:
-        combo = mod + "(" + combo + ")"
+    # Apply those modifiers
+    for mod in mods: output = mod + "(" + output + ")"
 
-    # package it up with the syntax
+    # Package it up with the syntax
     ret = "{#" + combo + "}"
 
-    # all done! :D
+    # Yay :D
     return ret
