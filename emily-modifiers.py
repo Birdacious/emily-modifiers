@@ -23,13 +23,13 @@ fingerspells = {
   "PB"       :"n",
   "RD"       :"o", # D looks like O
   "P"        :"p",
-  "*PBLGZ"   :"q", # rstick(l,l,ul,u), like KW on LHS
+  "PBGSDZ"   :"q", # rstick(l,l,ul,u), like KW on LHS
   "R"        :"r",
   "S"        :"s",
   "T"        :"t",
   "RG"       :"u", # G doesn't look like U, but U is for "up" and K is rstick(u)
   "*F"       :"v",
-  "*PLZ"     :"w", # rstick(l,l)
+  "PSDZ"     :"w", # rstick(l,l), like W on LHS
   "GS"       :"x",
   "BGS"      :"x",
   "RPBLG"    :"y", # y = KWR on LHS, so y = RMK (R)(PL)(BG) on RHS
